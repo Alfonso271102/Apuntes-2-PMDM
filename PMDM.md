@@ -387,11 +387,127 @@ fun IntroduceNombre(
 }
 ```
 
+# Maqueado de UI
+## Surface
+- Sirve para darle atributos a elementos que no los pueden tener
+```kt
+@Composable
+fun TextoConForma(
+    modifier: Modifier = Modifier,
+    texto : String = "Hola Mundo",
+    color : Color = MaterialTheme.colorScheme.primary) {
+    Surface(
+        modifier = modifier.then(Modifier.padding(1.dp)),
+        color = color,
+        shape = RoundedCornerShape(10.dp)
+    ) {
+        Text(
+            modifier = Modifier.padding(20.dp),
+            textAlign = TextAlign.Center,
+            text = texto)
+    }
+}
+```
+## Box
+- Permite apilar elementos uno encima del otro.
+```kt
+@Composable
+fun EjemploBox() {
+    Box(
+        modifier = Modifier
+            .size(200.dp)
+            .background(Color.LightGray),  // Fondo de la Box
+        contentAlignment = Alignment.Center // Alineación central de los elementos dentro de la Box
+    ) {
+        // Elemento de fondo
+        Text(
+            text = "Texto de Fondo",
+            modifier = Modifier.align(Alignment.TopStart) // Alineado en la parte superior izquierda
+        )
 
+        // Elemento encima del texto
+        Text(
+            text = "Texto Encima",
+            color = Color.White,
+            modifier = Modifier.align(Alignment.Center) // Alineado en el centro de la Box
+        )
+    }
+}
+```
 
+## Column y Row
+- Column organiza sus elementos de manera vertical. 
 
+```kt
+@Composable
+fun EjemploColumn() {
+    Column(
+        modifier = Modifier.padding(16.dp),   // Espaciado alrededor de la columna
+        verticalArrangement = Arrangement.spacedBy(8.dp), // Espaciado entre elementos
+        horizontalAlignment = Alignment.CenterHorizontally  // Alineación de los elementos en el centro
+    ) {
+        Text(text = "Elemento 1")
+        Text(text = "Elemento 2")
+        Text(text = "Elemento 3")
+    }
+}
 
+```
+- Row organiza sus elementos de manera horizontal.
+```kt
+@Composable
+fun EjemploRow() {
+    Row(
+        modifier = Modifier.padding(16.dp),    // Espaciado alrededor de la fila
+        horizontalArrangement = Arrangement.spacedBy(12.dp),  // Espaciado entre elementos
+        verticalAlignment = Alignment.CenterVertically  // Alineación de los elementos en el centro vertical
+    ) {
+        Text(text = "Elemento 1")
+        Text(text = "Elemento 2")
+        Text(text = "Elemento 3")
+    }
+}
+```
+## FlowColumn y FlowRow
+- FlowColumn organiza sus elementos de manera vertical, pero permite que los elementos se acomoden en varias "columnas" si no caben en una sola.
+- FlowRow organiza sus elementos de manera horizontal, pero si no caben en una sola fila, los elementos se mueven a una nueva "fila" debajo de la anterior.
 
+```kt
+fun EjemploFlowRow() {
+    FlowRow(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),  // Espaciado entre los elementos
+        verticalAlignment = Alignment.CenterVertically      // Alineación vertical en el centro
+    ) {
+        for (i in 1..20) {
+            Button(onClick = {}) {
+                Text("Elemento $i")
+            }
+        }
+    }
+}
+
+@Composable
+fun EjemploFlowColumn() {
+    FlowColumn(
+        modifier = Modifier.fillMaxHeight(),
+        verticalArrangement = Arrangement.spacedBy(8.dp),  // Espaciado entre los elementos
+        horizontalAlignment = Alignment.CenterHorizontally  // Alineación horizontal al centro
+    ) {
+        for (i in 1..20) {
+            Button(onClick = {}) {
+                Text("Elemento $i")
+            }
+        }
+    }
+}
+```
+
+## Imagenes
+- Generalmente funcionará de la siguiente forma:
+```kt
+val painter = painterResource(id = R.drawable.balmis)
+```
 
 
 
