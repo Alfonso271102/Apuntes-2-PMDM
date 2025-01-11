@@ -1,4 +1,32 @@
-[[_TOC_]]
+Table of Contents
+=================
+
+* [Cambiar icono de la app](#cambiar-icono-de-la-app)
+* [Estrucutacion basica de la app](#estrucutacion-basica-de-la-app)
+   * [Mock](#mock)
+   * [DaoMock](#daomock)
+   * [Repository](#repository)
+   * [ReposritoryConverter](#reposritoryconverter)
+   * [UiState](#uistate)
+   * [UiStateConverter](#uistateconverter)
+   * [Event (sealed Interfaz)](#event-sealed-interfaz)
+   * [ViewModel](#viewmodel)
+   * [Screen](#screen)
+* [Elevaciones de estado](#elevaciones-de-estado)
+* [Maqueado de UI](#maqueado-de-ui)
+   * [Surface](#surface)
+   * [Box](#box)
+   * [Column y Row](#column-y-row)
+   * [FlowColumn y FlowRow](#flowcolumn-y-flowrow)
+   * [Imagenes](#imagenes)
+* [MD3](#md3)
+   * [Ejemplo botón like](#ejemplo-botón-like)
+   * [Checkbox](#checkbox)
+   * [Cards](#cards)
+   * [Textfiel](#textfiel)
+   * [Chip](#chip)
+   * [Dialogos](#dialogos)
+
 
 # Cambiar icono de la app
 
