@@ -535,7 +535,18 @@ fun EjemploFlowColumn() {
 ## Imagenes
 - Generalmente funcionará de la siguiente forma:
 ```kt
-val painter = painterResource(id = R.drawable.balmis)
+@Composable
+fun ImagenEjemplo() {
+    val painter = painterResource(id = R.drawable.balmis)
+    Image(
+        painter = painter,
+        contentDescription = "Imagen de Balmis",
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(200.dp),
+        contentScale = ContentScale.Crop // Ajusta cómo se escala la imagen
+    )
+}
 ```
 # MD3
 ## Ejemplo botón like
