@@ -508,11 +508,429 @@ fun EjemploFlowColumn() {
 ```kt
 val painter = painterResource(id = R.drawable.balmis)
 ```
+# MD3
+## Ejemplo botón like
+```kt
+@Composable
+private fun ButtonLikeBalmis(onClick: () -> Unit) {
+    // Va a ser un botón con los colores de borde de Material Design 3, 
+    // pero cambiando el contentColor a Rojo.
+    val colors: ButtonColors = ButtonDefaults.outlinedButtonColors(
+        contentColor = Color.Red
+    )
+    Button(
+        onClick = onClick,
+        // El bode tendrá el color del contentColor pero mantedrá 
+        // el grosor definido de Material 3 para los botones con borde. 
+        border = BorderStroke(
+            width = ButtonDefaults.outlinedButtonBorder.width,
+            color = colors.contentColor
+        ),
+        colors = colors,
+        // El padding será el mismo que usen los botones con Icono.
+        contentPadding = ButtonDefaults.ButtonWithIconContentPadding
+    ) {
+        // La imagen será un Icono de Material Design 3 pero ...
+        Image(
+            // Su tamaño será el de los iconos en los botones de Material 3.
+            modifier = Modifier.size(ButtonDefaults.IconSize),
+            // Icono añadido a los recursos
+            painter = painterResource(id = R.drawable.favorite_24px),
+            contentDescription = "Favorite",
+            // El color del icono será también contentColor
+            colorFilter = ColorFilter.tint(colors.contentColor)
+        )
+        // El espaciado tiene el mismo tamaño que el de los botones con Icono.
+        Spacer(Modifier.size(ButtonDefaults.IconSpacing))
+        Text("I love Balmis")
+    }
+}
+```
+## Checkbox
+```kt
+// Estará preparado para hacer State Hoisting por tanto es Stateless
+@Composable
+private fun CheckboxWithLabel(
+    label: String,
+    modifier: Modifier = Modifier,
+    checkedState: Boolean,
+    enabledState: Boolean = true,
+    onStateChange: (Boolean) -> Unit) {
+    // Definimos un Row para alinear Checkbox y Texto
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Start
+    ) {
+        Checkbox(
+            checked = checkedState,
+            onCheckedChange = onStateChange,
+            enabled = enabledState,
+        )
+        Text(
+            text = label,
+            maxLines = 1,
+            style = MaterialTheme.typography.bodySmall
+        )
+    }
+}
 
+@Preview(showBackground = true, name = "CheckBoxPreview")
+@Composable
+fun CheckBoxPreview() {
+    var checkedState by remember { mutableStateOf(true) }
+    HolaMundoTheme {
+        Box {
+            CheckboxWithLabel(
+                label = "I Love Balmis",
+                modifier = Modifier.padding(12.dp)
+                                   .wrapContentWidth(),
+                checkedState = checkedState,
+                onStateChange = { checkedState = it }
+            )
+        }
+    }
+}
+```
 
+## Cards
+- Son un contenedor, en el que la informacion está ordenada de una forma especifica, ejemplo
+```kt
+@Composable
+private fun TarjetaBalmis(modifier: Modifier = Modifier) = ElevatedCard(
+    modifier = modifier.then(Modifier.wrapContentSize()),
+    elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+) {
+    Column {
+        Surface(
+            modifier = Modifier.clip(CardDefaults.shape),
+            color = MaterialTheme.colorScheme.primary
+        ) {
+            Image(
+                modifier = Modifier.fillMaxWidth(),
+                painter = painterResource(id = R.drawable.balmis),
+                contentDescription = "IES Doctor Balmis",
+                contentScale = ContentScale.FillWidth,
+                alpha = 0.8f
+            )
+        }
+        Spacer(modifier = Modifier.size(12.dp))
+        Text(
+            modifier = Modifier.padding(start = 12.dp, end = 12.dp),
+            text = "IES Doctor Balmis",
+            style = MaterialTheme.typography.headlineLarge
+        )
+        Text(
+            modifier = Modifier.padding(start = 12.dp, end = 12.dp),
+            text = "Alicante",
+            style = MaterialTheme.typography.headlineSmall
+        )
+        Spacer(modifier = Modifier.size(12.dp))
+        Text(
+            modifier = Modifier.padding(start = 12.dp, end = 12.dp),
+            text = "Instituto de Educación Secundaria donde se imparte el Ciclo Formativo"
+                   + " de Grado Superior de Desarrollo de Aplicaciones Multiplataforma",
+            style = MaterialTheme.typography.bodyMedium
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(12.dp),
+            horizontalArrangement = Arrangement.End
+        ) {
+            Button(onClick = { }) {
+                Text(text = "Saber más")
+            }
+        }
+    }
+}
+```
 
+## Textfiel
+- Ejemplos:
+```kt
+@Composable
+private fun OutlinedTextFieldWithErrorState(
+    modifier: Modifier = Modifier,
+    label: String,
+    textoState: String,
+    textoPista: String = "",
+    leadingIcon: @Composable (() -> Unit)? = null,
+    validacionState: Validacion,
+    keyboardOptions: KeyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+    keyboardActions: KeyboardActions = KeyboardActions(),
+    onValueChange: (String) -> Unit
+) {
+    OutlinedTextField(
+        modifier = modifier,
+        value = textoState,
+        onValueChange = onValueChange,
+        singleLine = true,
+        // Icono al principio del TextField por defecto vale null.
+        leadingIcon = leadingIcon,
+        // Como vamos a mostrar el texto de la pista o hint cuando estemos editando.
+        // por defecto la pista es la cadena vacía.
+        placeholder = {
+            Text(
+                text = textoPista,
+                style = TextStyle(
+                    color = MaterialTheme.colorScheme
+                        .onSurfaceVariant.copy(alpha = 0.4f)
+                )
+            )
+        },
+        // Etiqueta personalizada que se muestra cuando no hay texto o
+        // encima del TextField cuando estamos editando.
+        // Le ponemos un asterisco si hay error como hemos especificado.
+        label = { Text(if (validacionState.hayError) "${label}*" else label) },
+        // La opciones del teclado permitirán la entrada alfanumérica.
+        keyboardOptions = keyboardOptions,
+        // Composable bajo el TextField que se muestra cuando hay error.
+        supportingText = {
+            if (validacionState.hayError) {
+                Text(text = validacionState.mensajeError!!)
+            }
+        },
+        // Parámetro con el estado del error.
+        isError = validacionState.hayError,
+        keyboardActions = keyboardActions
+    )
+}
 
+@Composable
+private fun OutlinedTextFieldEmail(
+    modifier: Modifier = Modifier,
+    label: String = "Email",
+    emailState: String,
+    validacionState: Validacion,
+    onValueChange: (String) -> Unit
+) {
+    OutlinedTextFieldWithErrorState(
+        modifier = modifier,
+        label = label,
+        textoState = emailState,
+        // La pista cambiará.
+        textoPista = "ejemplo@correo.com",
+        // Las opciones de teclado serán para un email.
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+        // El icono será el de un email.
+        leadingIcon = {
+            Icon(
+                imageVector = Icons.Filled.Email,
+                contentDescription = "Email"
+            )
+        },
+        // Será Stateles y la forma de validar la decidiremos al usarlo. 
+        validacionState = validacionState,
+        onValueChange = onValueChange
+    )
+}
 
+@PreviewLightDark
+@Composable
+private fun TextFiledPreview() {
+    var nombreState by remember { mutableStateOf("") }
+    var validacionNombre by remember { mutableStateOf(object : Validacion {} as Validacion) }
+    var emailState by remember { mutableStateOf("") }
+    var validacionEmail by remember { mutableStateOf(object : Validacion {} as Validacion) }
+
+    ProyectoBaseTheme {
+        Surface {
+        Column {
+            OutlinedTextFieldWithErrorState(
+                modifier = Modifier.fillMaxWidth(),
+                label = "Nombre", textoState = nombreState,
+                validacionState = validacionNombre,
+                onValueChange = {
+                    nombreState = it
+                    validacionNombre = object : Validacion {
+                        override val hayError: Boolean
+                            get() = it.isEmpty()
+                        override val mensajeError: String?
+                            get() = "El nombre no puede estar vacío"
+                    }
+                }
+            )
+            OutlinedTextFieldEmail(
+                modifier = Modifier.fillMaxWidth(), emailState = emailState,
+                validacionState = validacionEmail,
+                onValueChange = {
+                    emailState = it
+                    validacionEmail = object : Validacion {
+                        override val hayError: Boolean
+                            get() = it.isEmpty()
+                                    || !Regex("^[A-Za-z](.*)([@]{1})(.{1,})(\\.)(.{1,})$")
+                                .matches(it)
+                        override val mensajeError: String?
+                            get() = "El email no es válido"
+                    }
+                }
+            )
+        }
+        }
+    }
+```
+
+## Chip
+- Es como un boton pero que varia de forma o visibilidad (parece ser)
+```kt
+@Composable
+fun FilterChipWithIcon(
+    modifier: Modifier = Modifier,
+    seleccionadoState: Boolean = true,
+    textoState: String = "Etiqueta",
+    iconState: Painter? = null,
+    onClick: () -> Unit = {}
+) {
+    FilterChip(
+        modifier = modifier.then(Modifier.height(FilterChipDefaults.Height)),
+        selected = seleccionadoState,
+        onClick = onClick,
+        label = { Text(textoState) },
+        leadingIcon = {
+            // Al estar seleccionado, mostramos el icono de selección
+            // y sustituimos el icono iconState por este.
+            if (seleccionadoState) {
+                Icon(
+                    painter = Filled.getCheckIcon(),
+                    contentDescription = "Icono seleccionado",
+                    modifier = Modifier.size(FilterChipDefaults.IconSize)
+                )
+            } else {
+                iconState?.let {
+                    Icon(
+                        painter = it,
+                        contentDescription = "Icono asociado a la etiqueta",
+                        modifier = Modifier.size(FilterChipDefaults.IconSize)
+                    )
+                }
+            }
+        }
+    )
+}
+
+@PreviewLightDark
+@Composable
+fun ChipPreview() {
+    var filtrarPor2DAM by remember { mutableStateOf(false) }
+    ProyectoBaseTheme {
+        Surface (modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+                                    .padding(8.dp))
+        {
+            FilterChipWithIcon(
+                seleccionadoState = filtrarPor2DAM,
+                textoState = "Estudiante 2DAM",
+                iconState = Filled.getPersonIcon(),
+                onClick = { filtrarPor2DAM = !filtrarPor2DAM }
+            )
+        }
+    }
+}
+```
+## Dialogos
+```kt
+// Definimos una clase con los tres posibles contenidos del Box.
+enum class ContenidoCaja { BOTON, DESPEDIDA_TRISTE, DESPEDIDA_ALEGRE }
+// Composable Stateless que nos genera el composable con el contenido
+// del Box según el estado gestionado por el AlertDialog
+@Composable
+fun ContenidoCaja(
+    contenidoCajaState: ContenidoCaja,
+    // Función que se ejecutará cuando pulsemos el botón de ver oferta.
+    // y que cambiará el estado para mostrar el AlertDialog.
+    onClickVerOferta: () -> Unit
+) {
+    when (contenidoCajaState) {
+        ContenidoCaja.BOTON -> {
+            Button(onClick = onClickVerOferta) {
+                Text(text = "Ver Oferta")
+            }
+        }
+        ContenidoCaja.DESPEDIDA_TRISTE -> {
+            Text(text = "Adios, tu te lo pierdes")
+        }
+        ContenidoCaja.DESPEDIDA_ALEGRE -> {
+            Text(text = "Enhorabuena, excelente elección")
+        }
+    }
+}
+@Composable
+fun DialogoOferta(
+    onAceptarDialogoOferta: () -> Unit,
+    onRechazarDialogoOferta: () -> Unit,
+    onCalcelaDialogoOferta: () -> Unit
+) =
+    // AlertDialog de Material 3
+    AlertDialog(
+        icon = {
+            Icon(
+                painterResource(R.drawable.gifts_24px),
+                contentDescription = "Pregunta"
+            )
+        },
+        title = { Text(text = "Oferta") },
+        text = {
+            // La lista la recordamos para no volver a generarla en cada recomposición.
+            val ofertas = remember {
+                listOf(
+                    "Apartamento en Torrevieja (Alicante)",
+                    "Aston Martin DB9",
+                    "100 Ceniceros del IES Balmis"
+                )
+            }
+            // Mostramos una oferta aleatoria de la lista.
+            Text(text = ofertas.random())
+        },
+        // Lo que hacemos al pulsar fuera del AlertDialog para cancelarlo.
+        onDismissRequest = onCalcelaDialogoOferta,
+        confirmButton = {
+            // En los AlertDialog de Material 3, el botón de confirmación
+            // debería ser un TextButton
+            TextButton(onClick = {
+                // Acción de Aceptar la oferta.
+                onAceptarDialogoOferta()
+                onCalcelaDialogoOferta()
+            }) {
+                Text("Aceptar")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = {
+                / Acción de Rechazar la oferta.
+                onRechazarDialogoOferta()
+                onCalcelaDialogoOferta()
+            }) {
+                Text("Rechazar")
+            }
+        }
+    )
+// Componente Box que implementará la lógica de la oferta.
+@Composable
+fun BoxOferta() = Box(
+    modifier = Modifier
+        .fillMaxWidth().size(height = 300.dp, width = 0.dp),
+    contentAlignment = Alignment.Center
+) {
+    var verDialogoOferta by remember { mutableStateOf(false) }
+    var contenidoCaja by remember { mutableStateOf(ContenidoCaja.BOTON) }
+
+    ContenidoCaja(
+        contenidoCajaState = contenidoCaja,
+        onClickVerOferta = { verDialogoOferta = true }
+    )
+
+    if (verDialogoOferta) {
+        DialogoOferta(
+            onAceptarDialogoOferta = {
+                contenidoCaja = ContenidoCaja.DESPEDIDA_ALEGRE
+            },
+            onRechazarDialogoOferta = {
+                contenidoCaja = ContenidoCaja.DESPEDIDA_TRISTE
+            },
+        ) {
+            verDialogoOferta = false
+        }
+    }
+}
+```
 
 
 
