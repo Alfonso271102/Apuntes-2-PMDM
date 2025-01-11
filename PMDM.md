@@ -1,3 +1,4 @@
+[[_TOC_]]
 
 # Cambiar icono de la app
 
