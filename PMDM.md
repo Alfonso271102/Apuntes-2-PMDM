@@ -46,14 +46,17 @@ com.pmdm.myapp
 ├── data 
 │   └── mocks  
 │   │   ├── RepositoryConverter.kt  
-│   │   └── UsuarioRepository.kt 
+│   │   └── UsuarioRepository.kt
+
 ├── ui  
 │   ├── themes  
 │   │   └── DarkTheme.kt  
+
 │   ├── views  
 │   │   ├── MainActivity.kt  
 │   │   └── Fragments.kt  
 │  
+
 ├── navigation  
 │   ├── MainNavGraph.kt  
 │   ├── Feature1ScreenRoute.kt  
@@ -65,13 +68,21 @@ com.pmdm.myapp
 │   ├── Component2.kt  
 │   └── ComposableUiState2.kt (Optional)  
 │  
+
 ├── features  
+
 │   ├── IniciuoEvent
+
 │   ├── InicioScreen
+
 │   ├── InicioUiState
+
 │   ├── InicioViewModel
+
 │   ├── UiStateConverter
+
 │ 
+
 │   ├── feature1  
 │   │   ├── Feature1Screen.kt  
 │   │   ├── Feature1ViewModel.kt  
