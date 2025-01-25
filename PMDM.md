@@ -983,12 +983,67 @@ fun BoxOferta() = Box(
 }
 ```
 
+# Hilt
+- Cosas que hay que poner para el hilt:
+- 1. Creamos la clase aplication en la raiz del proyecto
+```kt
+@HiltAndroidApp
+class MiApplication : Application() {
 
+}
+```
+- 2. En AndroidManifest.xml añadir:
+```xml
+<application
+  android:name=".MiApplication" --> Añadir esto
+  android:allowBackup="true"
+  ...>
 
+  ...
 
+```
 
+- 3. Añadir AndroidEntryPoint en mainActivity
+```kt
+@AndroidEntryPoint
+class MainActivity : ComponentActivity() { ... }
+```
 
+- 4. Insertar HiltViewModel
+```kt
+@HiltViewModel
+class EventoViewModel @Inject constructor(private val eventoRepository : EventoRepository) : ViewModel() {
+```
+- 5. Añadir hotviewmodel a Screen
+```kt
+@Composable
+fun EventosScreen(viewModel: EventoViewModel = hiltViewModel()
+```
+- 6. Creamos el package "di" y dentro la clase AppModule
+```kt
+@Module
+@InstallIn(SingletonComponent::class)
+class AppModule {
+    @Provides
+    @Singleton
+    fun provideSharedPreferences(@ApplicationContext context: Context) : SharedPreferences {
+        return context.getSharedPreferences("miApp", Context.MODE_PRIVATE)
+    }
 
+    @Provides
+    @Singleton
+    fun provideEcentoDaoMock() : EventoDaoMock = EventoDaoMock()
+
+    @Provides
+    @Singleton
+    fun provideMiRepositorio(eventoDaoMock : EventoDaoMock) : EventoRepository = EventoRepository(eventoDaoMock)
+}
+```
+- 7. Creamos la inyección enel repositorio y en el DaoMock
+```kt
+class EventoRepository @Inject constructor(private val proveedorEventos:EventoDaoMock) {}
+class EventoDaoMock @Inject constructor(){}
+```
 
 
 
