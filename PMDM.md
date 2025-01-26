@@ -1045,10 +1045,708 @@ class EventoRepository @Inject constructor(private val proveedorEventos:EventoDa
 class EventoDaoMock @Inject constructor(){}
 ```
 
+# Listas perezosas
+
+- Ejemplo LazyColumn
+```kt
+@Composable
+fun PedidoScreen(
+    pedido: PedidoUiState,
+) {
+
+    LazyColumn(
+       // columns = GridCells.Fixed(1),
+        contentPadding = PaddingValues(all = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        items(pedido.articulos.size) { item ->
+            CardPedido(
+                articulo = pedido.articulos[item],
+                modifier = Modifier.size(80.dp),
+
+        )}
+    }
+}
+```
+- pedido.articulos.size ->  Representa el número total de elementos (artículos) que serán generados en la lista. 
+- pedido.articulos[item]: Obtiene el artículo en la posición item de la lista articulos.
+
+- Con datos indexados:
+```kt
+itemsIndexed(items = datosState) { i, dato ->
+    Row(
+        modifier = Modifier.clickable { onClickDato(i) },
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "$i:", // Muestra el índice
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(8.dp).weight(0.2f)
+        )
+        TarjetaDato(
+            modifier = Modifier.weight(0.8f),
+            datoState = dato
+        )
+    }
+}
+
+
+
+//Ejemplo eliminando un elemento:
+
+@Composable
+fun DatosEnColumnaIndexada(
+    datosState: MutableList<Datos>, // Cambia a MutableList para permitir modificaciones
+    onClickDato: (Int) -> Unit = {}
+) {
+    LazyColumn(
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        itemsIndexed(items = datosState) { i, dato ->
+            Row(
+                modifier = Modifier
+                    .clickable { 
+                        datosState.removeAt(i) // Eliminar el elemento al pulsar
+                    }
+                    .padding(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "$i:",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.weight(0.2f)
+                )
+                TarjetaDato(
+                    modifier = Modifier.weight(0.8f),
+                    datoState = dato
+                )
+            }
+        }
+    }
+}
+```
+
+# Scaffold
+## Ejemplo barra superior e inferior, con contenido en el centro
+```kt
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun BarraAplicacion(
+    comportamientoAnteScroll: TopAppBarScrollBehavior
+) = TopAppBar(
+    title = {
+        // El texto en TopAppBar solo puede tener una línea
+        Text("", maxLines = 1, overflow = TextOverflow.Ellipsis)
+    },
+    navigationIcon = {
+        IconButton(onClick = { }) {
+            Icon(painter = painterResource(R.drawable.baseline_arrow_back_ios_24), contentDescription = null)
+        }
+    },
+    actions = {
+        IconButton(onClick = { }) {
+            Icon(painter = painterResource(R.drawable.baseline_build_24), contentDescription = null)
+        }
+        IconButton(onClick = { }) {
+            Icon(painter = painterResource(R.drawable.baseline_menu_24), contentDescription = null)
+        }
+    },
+    scrollBehavior = comportamientoAnteScroll,
+    colors = TopAppBarDefaults.topAppBarColors(
+        containerColor = Color.LightGray
+    )
+)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun PantallaConScroll() {
+    val comportamientoAnteScroll = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val comportamientoAnteScrollInf = BottomAppBarDefaults.exitAlwaysScrollBehavior()
+    var itemSeleccionadoState: Int? by remember { mutableStateOf(null) }
+
+    Scaffold(
+        modifier = Modifier.nestedScroll(comportamientoAnteScroll.nestedScrollConnection),
+        topBar = { BarraAplicacion(comportamientoAnteScroll) },
+        bottomBar = {
+            if (itemSeleccionadoState == null)
+                BarraAppInferiorSeleccion(comportamientoAnteScrollInf)
+            else
+                BarraAppInferiorSeleccion(comportamientoAnteScrollInf)
+        },
+        content = { innerPadding ->
+            ContenidoPrincipalScaffold(modifier = Modifier.padding(innerPadding))
+        }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun BarraAppInferiorSeleccion(
+    comportamientoAnteScroll: BottomAppBarScrollBehavior
+    = BottomAppBarDefaults.exitAlwaysScrollBehavior()
+) {
+    val descripcionEIconos = remember {
+        listOf(
+            "Eliminar Item" to R.drawable.baseline_edit_24,
+            "Completar Item" to R.drawable.baseline_delete_24
+        )
+    }
+
+    BottomAppBar(
+        actions = {
+            descripcionEIconos.forEach { (descripcion, icono) ->
+                IconButton(
+                    onClick = { }) {
+                    Icon(
+                        painter = painterResource(icono),
+                        tint = MaterialTheme.colorScheme.secondary,
+                        contentDescription = descripcion
+                    )
+                }
+            }
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = {  },
+                containerColor = BottomAppBarDefaults.bottomAppBarFabColor,
+                contentColor = MaterialTheme.colorScheme.primary,
+                elevation = FloatingActionButtonDefaults.bottomAppBarFabElevation()
+            ) {
+                Icon(painter = painterResource(R.drawable.baseline_add_24), "Localized description")
+            }
+        },
+        scrollBehavior = comportamientoAnteScroll
+    )
+}
+
+
+@Composable
+fun ContenidoPrincipalScaffold(
+    modifier: Modifier = Modifier
+) {
+    val colors = remember { listOf(Color(0xFF50A2E4), Color(0xFFFFFFFF)) }
+    LazyColumn(modifier = modifier) {
+        items(count = 25) {
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .background(colors[it % colors.size])
+            ) {
+                Text(
+                    text = "Item $it", modifier = Modifier.padding(16.dp)
+                )
+            }
+        }
+    }
+}
+
+```
+
+## Ejemplo barra superior, navigation bar inferior y contenido en el centro con un lazygrid
+```kt
+@Composable
+fun NavBar(
+    indexScreenState: Int,
+    onNavigateToScreen: (Int) -> Unit
+) {
+    val titlesAndIcons = remember {
+        listOf(
+            "Pantalla 1" to R.drawable.baseline_home_24,
+            "Pantalla 2" to R.drawable.baseline_people_alt_24,
+            "Pantalla 3" to R.drawable.baseline_add_alert_24
+        )
+    }
+
+    NavigationBar {
+        titlesAndIcons.forEachIndexed { index, (title, icon) ->
+            NavigationBarItem(
+                icon = { Icon(painter = painterResource(icon), contentDescription = title) },
+                label = { Text(title) },
+                selected = indexScreenState == index,
+                onClick = { onNavigateToScreen(index) }
+            )
+        }
+    }
+}
+
+@Composable
+fun ContenidoPrincipalNavBar(
+    indexScreenState: Int,
+    modifier: Modifier = Modifier
+) {
+    val backgroundColor = when (indexScreenState) {
+        0 -> MaterialTheme.colorScheme.primaryContainer
+        1 -> MaterialTheme.colorScheme.secondaryContainer
+        else -> MaterialTheme.colorScheme.tertiaryContainer
+    }
+    Box(
+        modifier = modifier.then(
+            Modifier
+                .fillMaxSize()
+                .background(color = backgroundColor)
+        ),
+        contentAlignment = Alignment.BottomCenter
+    ) {
+
+
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(2),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            val elementos = listOf(
+                "Pantalla 1" to R.drawable.baseline_accessibility_24,
+                "Pantalla 2" to R.drawable.baseline_airplanemode_active_24,
+                "Pantalla 3" to R.drawable.baseline_add_alert_24,
+                "Pantalla 3" to R.drawable.baseline_3p_24
+            )
+
+            items(elementos) { (texto, icono) ->
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1f),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F1F8)),
+                    elevation = CardDefaults.cardElevation(4.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(8.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            painter = painterResource(icono),
+                            contentDescription = texto,
+                            modifier = Modifier.size(48.dp),
+                            tint = Color.Black
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = texto,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun PantallaNavBar() {
+    var indexScreenState by remember { mutableStateOf(0) }
+    val comportamientoAnteScroll = TopAppBarDefaults.pinnedScrollBehavior()
+    Scaffold(
+        modifier = Modifier.nestedScroll(comportamientoAnteScroll.nestedScrollConnection),
+        topBar = { BarraAplicacion(comportamientoAnteScroll) },
+        bottomBar = {
+            NavBar(
+                indexScreenState = indexScreenState,
+                onNavigateToScreen = { indexScreenState = it }
+            )
+        },
+        content = { innerPadding ->
+            ContenidoPrincipalNavBar(
+                indexScreenState = indexScreenState,
+                modifier = Modifier.padding(innerPadding)
+            )
+        }
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PantallaNavBarPreview() {
+    PantallaNavBar()
+}
+```
+
+## Ejemplo barra superior (con opciones en las barras), navInferior, contenido central con imagen superior y pantalla con tabs
+```kt
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun Tabs() {
+    var tabIndexState by remember { mutableStateOf(0) }
+    val titlesAndIcons = remember {
+        listOf(
+            "Todos" to R.drawable.baseline_home_24,
+            "Pares" to R.drawable.baseline_people_alt_24,
+            "Impares" to R.drawable.baseline_build_24
+        )
+    }
+    PrimaryTabRow(selectedTabIndex = tabIndexState) {
+        titlesAndIcons.forEachIndexed { index, (title, icon) ->
+            Tab(
+                selected = tabIndexState == index,
+                onClick = { tabIndexState = index },
+                text = { Text(
+                    text = title,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis)
+                },
+                icon = { Icon(painterResource(icon), contentDescription = null) }
+            )
+        }
+    }
+}
+
+@Composable
+fun ContenidoTabs(
+    modifier: Modifier = Modifier
+) {
+
+    Column(modifier = modifier) {
+        Image(contentDescription = "imagenarriba",
+           painter = painterResource(R.drawable.obra),
+            modifier = Modifier.fillMaxWidth().height(200.dp))
+        Tabs()
+        Column {
+                Text(
+                    text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras et lacus sed erat rutrum porta vel eget dolor. Pellentesque sed purus porta, vestibulum neque in, fringilla dolor. Quisque sollicitudin gravida iaculis. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Proin sed lobortis ipsum. Etiam condimentum suscipit augue. Quisque porta nisi in porttitor varius. Etiam at tempus augue. Pellentesque dapibus lacus in leo cursus, at mattis ante cursus. Nullam vel sodales enim. Vestibulum ultrices scelerisque faucibus. Praesent urna est, scelerisque ac placerat nec, cursus et nisi. Sed non dolor nisi. Praesent feugiat nibh tortor.\n" +
+                            "\n" +
+                            "Interdum et malesuada fames ac ante ipsum primis in faucibus. Duis euismod vehicula facilisis. Vivamus gravida interdum est ac varius. Morbi in metus a sapien fringilla interdum interdum sed diam. Morbi sed hendrerit orci, id molestie ante. Suspendisse potenti. Vestibulum ultricies consequat nisl sed cursus. Nulla ex est, varius et sapien eget, consequat egestas risus. Nunc a sem nec erat euismod suscipit et et orci. Mauris vulputate dignissim enim, sed dignissim ex tristique sit amet. In a justo nec felis suscipit mollis. Aliquam mattis feugiat elit at malesuada. Cras dictum magna quis sem iaculis finibus. Vivamus rutrum viverra mollis. Vestibulum finibus auctor enim.",
+                    modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                    textAlign = TextAlign.Center
+                )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun PantallaConTabs() {
+    val comportamientoAnteScroll = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    var indexScreenState by remember { mutableStateOf(0) }
+
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+    var itemSeleccionadoState: Int? by remember { mutableStateOf(null) }
+    val onSeleccionarItem: (Int) -> Unit = {
+        itemSeleccionadoState = if (itemSeleccionadoState != it) it else null
+        scope.launch {
+            if (itemSeleccionadoState != null) {
+                snackbarHostState.currentSnackbarData?.dismiss()
+                snackbarHostState.showSnackbar(
+                    message = "Saliendo de la aplicación",
+                )
+            }
+        }
+    }
+
+    Scaffold(
+        modifier = Modifier.nestedScroll(comportamientoAnteScroll.nestedScrollConnection),
+        topBar = { BarraAplicacionDropMenu(false, comportamientoAnteScroll, snackbarHostState) },
+        content = { innerPadding ->
+            ContenidoTabs(modifier = Modifier.padding(innerPadding))
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = {
+                    scope.launch {
+                        if (itemSeleccionadoState != null) {
+                            snackbarHostState.currentSnackbarData?.dismiss()
+                            snackbarHostState.showSnackbar(
+                                message = "Item $itemSeleccionadoState borrado",
+                                withDismissAction = true,
+                                duration = SnackbarDuration.Indefinite
+                            )
+                        }
+                    }
+                }
+            ) {
+                Icon(imageVector = Icons.Filled.Delete, contentDescription = null)
+            }
+        },
+        bottomBar = {  NavBar(
+            indexScreenState = indexScreenState,
+            onNavigateToScreen = { indexScreenState = it }
+        )}
+    )
+}
+
+@Immutable
+data class ItemMenuDesplegable(
+    val descripcion: String,
+    val onClick: () -> Unit
+)
+
+@Composable
+fun AccionesConMenuDesplegable(
+    itemsMenu : List<ItemMenuDesplegable>
+) {
+    // Precondición de uso
+    if (itemsMenu.count() < 2)
+        throw IllegalArgumentException("Se requieren al menos 2 items en el menú desplegable")
+    var expandidoState by remember { mutableStateOf(false) }
+    val cerrarMenu: () -> Unit = { expandidoState = false }
+
+    IconButton(onClick = itemsMenu[0].onClick) {
+        Icon(
+            painter = painterResource(R.drawable.baseline_build_24),
+            contentDescription = itemsMenu[0].descripcion
+        )
+    }
+    IconButton(onClick = { expandidoState = true }) {
+        Icon(painter = painterResource(R.drawable.baseline_menu_24), contentDescription = null)
+    }
+
+    DropdownMenu(
+        expanded = expandidoState,
+        onDismissRequest = cerrarMenu
+    ) {
+        for (i in 0 until itemsMenu.count()) {
+            DropdownMenuItem(
+                text = { Text(itemsMenu[i].descripcion) },
+                onClick = {
+                    itemsMenu[i].onClick()
+                    cerrarMenu()
+                },
+                leadingIcon = {
+                    Icon(
+                        painter = painterResource(R.drawable.baseline_menu_24),
+                        contentDescription = itemsMenu[i].descripcion
+                    )
+                })
+        }
+    }
+}
+
+
+
+@Composable
+fun AccionesConMenuDesplegableSinSeleccion(snackbarHostState: SnackbarHostState ) {
+    val scope = rememberCoroutineScope()
+
+    val descripcionEIconos = remember {
+        listOf(
+            ItemMenuDesplegable(
+                descripcion = "Cerrar sesión", onClick = {
+                    scope.launch {
+                        snackbarHostState.currentSnackbarData?.dismiss()
+                        snackbarHostState.showSnackbar("Se está cerrando la sesión")
+                    }
+                }
+            ),
+            ItemMenuDesplegable(
+                descripcion = "Salir aplicación", onClick = {
+                    scope.launch {
+                        snackbarHostState.currentSnackbarData?.dismiss()
+                        snackbarHostState.showSnackbar("Saliendo de la aplicación")
+                    }
+                }
+            ),
+        )
+    }
+    return AccionesConMenuDesplegable(itemsMenu = descripcionEIconos)
+}
 
 
 
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun BarraAplicacionDropMenu(
+    itemSeleccionadoState: Boolean,
+    comportamientoAnteScroll: TopAppBarScrollBehavior,
+    snackbarHostState: SnackbarHostState
+) = TopAppBar(
+    title = {
+        Text("", maxLines = 1, overflow = TextOverflow.Ellipsis)
+    },
+    navigationIcon = {
+        IconButton(onClick = { }) {
+            Icon(painter = painterResource(R.drawable.baseline_arrow_back_ios_24), contentDescription = null)
+        }
+    },
+    actions = {
+        if (!itemSeleccionadoState) AccionesConMenuDesplegableSinSeleccion(snackbarHostState)
+    },
+    scrollBehavior = comportamientoAnteScroll,
+    colors = TopAppBarDefaults.topAppBarColors(
+        containerColor = Color.LightGray
+    )
+)
+
+
+@Preview(showBackground = true)
+@Composable
+fun PantallaConTabsPreview() {
+    PantallaConTabs()
+}
+```
+
+## Ejemplo barra lateral izquierda
+```kt
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun BarraAppEnScaffoldDentroNavDrawer(
+    onClickActionMenu: () -> Unit,
+    comportamientoAnteScroll: TopAppBarScrollBehavior
+) = TopAppBar(
+    title = {
+        Text("", maxLines = 1, overflow = TextOverflow.Ellipsis)
+    },
+    navigationIcon = {
+        IconButton(onClick = onClickActionMenu) {
+            Icon(painter = painterResource(R.drawable.baseline_arrow_back_ios_24), contentDescription = null)
+        }
+    },
+    actions = {
+        IconButton(onClick = { }) {
+            Icon(painter = painterResource(R.drawable.baseline_build_24), contentDescription = null)
+        }
+        IconButton(onClick = { }) {
+            Icon(painter = painterResource(R.drawable.baseline_menu_24), contentDescription = null)
+        }
+    },
+    scrollBehavior = comportamientoAnteScroll
+)
+
+@Composable
+fun PantallaPrincipalScaffoldDentroNavDrawer(
+    selecteItemState: ItemMenuEjemploNavDrawer,
+    modifier: Modifier = Modifier
+) {
+    val backgroundColor = when (selecteItemState.index) {
+        0 -> MaterialTheme.colorScheme.primaryContainer
+        1 -> MaterialTheme.colorScheme.secondaryContainer
+        else -> MaterialTheme.colorScheme.tertiaryContainer
+    }
+    Box(
+        modifier = modifier.then(
+            Modifier
+                .fillMaxSize()
+                .background(color = backgroundColor)
+        ),
+        contentAlignment = Alignment.TopCenter
+    ) {
+        Text(
+            modifier = Modifier.padding(top = 32.dp),
+            text = selecteItemState.nombre,
+            textAlign = TextAlign.Center,
+            style = MaterialTheme.typography.headlineLarge
+        )
+    }
+}
+
+enum class ItemMenuEjemploNavDrawer(
+    val index: Int,
+    val nombre: String
+) {
+    Pantalla1(index = 0,nombre = "Amigos"),
+    Pantalla2(index = 1, nombre = "Coro"),
+    Pantalla3(index = 2, nombre = "Familia"),
+    Pantalla4(index = 3, nombre = "Trabajo"),
+    Pantalla5(index = 4, nombre = "Vecinos")
+}
+
+@Composable
+fun ContenidoNavDrawer(
+    selecteItemState: ItemMenuEjemploNavDrawer,
+    onItemSelected: (ItemMenuEjemploNavDrawer) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val items = remember {
+        listOf(
+            ItemMenuEjemploNavDrawer.Pantalla1,
+            ItemMenuEjemploNavDrawer.Pantalla2,
+            ItemMenuEjemploNavDrawer.Pantalla3,
+            ItemMenuEjemploNavDrawer.Pantalla4,
+            ItemMenuEjemploNavDrawer.Pantalla5
+        )
+    }
+    ModalDrawerSheet(modifier = modifier) {
+        Image(contentDescription = "imagenarriba",
+            painter = painterResource(R.drawable.amigos),
+            modifier = Modifier.fillMaxWidth().height(200.dp))
+        Spacer(Modifier.height(12.dp))
+        items.forEach { item ->
+            NavigationDrawerItem(
+                label = { Text(item.nombre) },
+                selected = item.index == selecteItemState.index,
+                onClick = { onItemSelected(item) },
+                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+            )
+        }
+    }
+}
+
+@Composable
+fun PantallaConNavDrawer() {
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    var selectedItem by remember { mutableStateOf(ItemMenuEjemploNavDrawer.Pantalla1) }
+    val scope = rememberCoroutineScope()
+    val onItemSelected: (ItemMenuEjemploNavDrawer) -> Unit = {
+        scope.launch { drawerState.close() }
+        selectedItem = it
+    }
+    val onClickActionMenu: () -> Unit = {
+        scope.launch { drawerState.open() }
+    }
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            ContenidoNavDrawer(
+                selecteItemState = selectedItem,
+                onItemSelected = onItemSelected
+            )
+        },
+        content = {
+            ScaffoldDentroNavDrawer(
+                selecteItemState = selectedItem,
+                onClickActionMenu = onClickActionMenu,
+            )
+        }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ScaffoldDentroNavDrawer(
+    selecteItemState: ItemMenuEjemploNavDrawer,
+    onClickActionMenu: () -> Unit,
+
+) {
+    var indexScreenState by remember { mutableStateOf(0) }
+    val comportamientoAnteScroll = TopAppBarDefaults.pinnedScrollBehavior()
+    Scaffold(
+        modifier = Modifier.nestedScroll(comportamientoAnteScroll.nestedScrollConnection),
+        topBar = {
+            BarraAppEnScaffoldDentroNavDrawer(
+                onClickActionMenu = onClickActionMenu,
+                comportamientoAnteScroll = comportamientoAnteScroll
+            )
+        },
+        bottomBar = {
+            NavBar(
+                indexScreenState = indexScreenState,
+                onNavigateToScreen = { indexScreenState = it }
+            )
+        },
+        content = { innerPadding ->
+            PantallaPrincipalScaffoldDentroNavDrawer(
+                selecteItemState = selecteItemState,
+                modifier = Modifier.padding(innerPadding)
+            )
+        }
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PantallaConNavDrawerPreview() {
+            PantallaConNavDrawer()
+}
+```
 
 
 
