@@ -1750,6 +1750,442 @@ fun PantallaConNavDrawerPreview() {
 
 ## Navegacion
 
+- Vreamos el paquete nav dentro de ui
+- Dentro creamos el NavHost
+```kt
+@Composable
+fun MiNavHost(
+    navController: NavHostController,
+    onClickActionMenu: () -> Unit,
+    selectedItem: ItemMenuEjemploNavDrawer,
+    onSalir: () -> Unit
+){
+    val vmListaContactos = hiltViewModel<ListadoContactosViewModel>()
+    val vmTrabajadors = hiltViewModel<TrabajoViewModel>()
+
+    NavHost(
+        navController = navController,
+        startDestination = PantallaListaContactosRoute // Pantalla inicial por defecto
+    ){
+        pantallaListaContactosDestination(
+            onNavigatePantallaTrabajadores = { contacto (dato que envio a la otra pantalla) ->
+                navController.navigate(PantallaTrabajadoresRoute(contacto))
+            },
+            selecteItemState = selectedItem,
+            onClickActionMenu = onClickActionMenu,
+            onSalir = onSalir,
+            contactos =  vmListaContactos.lista.toContactoUiState()
+        )
+        pantallaTrabajadoresDestination(
+            onNavegarAtras = {
+                navController.popBackStack() ; // navegar atras
+                 onClickActionMenu()
+            },
+            onSalir = onSalir,
+            viewModel = vmTrabajadors
+        )
+    }
+
+}
+
+```
+
+- Creamos un route para cada pantalla
+
+```kt
+@Serializable
+object PantallaListaContactosRoute //(object porque no recibe parametros, sino data class)
+
+fun NavGraphBuilder.pantallaListaContactosDestination(
+    selecteItemState: ItemMenuEjemploNavDrawer,
+    onClickActionMenu: () -> Unit,
+    onSalir: () -> Unit,
+    contactos: List<ContactoUiState>,
+    onNavigatePantallaTrabajadores: (Int) -> Unit
+){
+    composable<PantallaListaContactosRoute> { backStackEntry ->
+        ScaffoldDentroNavDrawer(
+            selecteItemState = selecteItemState,
+            onClickActionMenu = onClickActionMenu,
+            onSalir = onSalir,
+            contactos = contactos,
+            onNavigatePantallaTrabajadores = onNavigatePantallaTrabajadores
+        )
+    }
+}
+```
+
+```kt
+@Serializable
+data class PantallaTrabajadoresRoute(val contacto: Int) // dato que recibo
+
+fun NavGraphBuilder.pantallaTrabajadoresDestination(
+    onNavegarAtras: () -> Unit,
+    onSalir: () -> Unit,
+    viewModel: TrabajoViewModel
+){
+    composable<PantallaTrabajadoresRoute> { backStackEntry -> //vuelve atras en la pila
+        val datos : PantallaTrabajadoresRoute = remember{ backStackEntry.toRoute<PantallaTrabajadoresRoute>()} (recupera todos los datos cargados desde la otra pantalla para que podamos acceder a ellos)
+
+        PantallaConTabs(
+            contacto = datos.contacto, (acceso a los datos de la otra pantalla)
+            onSalir = onSalir,
+            onNavegarAtras = onNavegarAtras,
+            viewModel = viewModel
+        )
+    }
+}
+```
+
+- Podemos por ejemplo poner el navhost en un content de un nav draver, para conseguir que se navegue, por ejemplo:
+
+```kt
+@Composable
+fun PantallaConNavDrawer(viewModelListado: ListadoContactosViewModel
+) {
+    val navController = rememberNavController() //(lo definimos)
+
+
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    var selectedItem by remember { mutableStateOf(ItemMenuEjemploNavDrawer.Pantalla1) }
+    val scope = rememberCoroutineScope()
+
+    val activity = LocalContext.current as? Activity
+
+    val onItemSelected: (ItemMenuEjemploNavDrawer) -> Unit = {
+            item ->
+        scope.launch { drawerState.close() }
+        selectedItem = item
+        viewModelListado.onItemSeleccionado(item.index)
+    }
+    val onClickActionMenu: () -> Unit = {
+        scope.launch { drawerState.open() }
+    }
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            ContenidoNavDrawer(
+                selecteItemState = selectedItem,
+                onItemSelected = onItemSelected,
+            )
+        },
+        content = {
+            MiNavHost(
+                navController = navController, //(aqui lo cargamos)
+                onClickActionMenu = onClickActionMenu,
+                selectedItem = selectedItem,
+                onSalir = {activity?.finish()}
+            )
+        }
+    )
+}
+
+``` 
+
+# Room
+
+## PreAjustes:
+- lib.versions.toml deberemos comprobar que hemos definido tener:
+```js
+[versions]
+kotlin = "2.0.20"
+ksp = "2.0.20-1.0.25"
+room = "2.6.1"
+
+[libraries]
+androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
+androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+
+[plugins]
+devtools-ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+```
+- build.gradle.kts raíz del proyecto añadiremos el siguiente plugin:
+```js
+plugins {
+    alias(libs.plugins.devtools.ksp) apply false
+}
+```
+- build.gradle.kts del módulo de la aplicación (app) añadiremos:
+```js
+plugins {
+    alias(libs.plugins.devtools.ksp)
+}
+...
+dependencies {
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
+}
+```
+
+## Crear las entidades que definen nuestro modelo
+```kt
+@Entity(tableName = "clientes" // en caso de que queramos que la tabla se llame diferente en la BD)
+data class ClienteEntity(
+    @PrimaryKey // si queremos definir una clave primaria
+    @ColumnInfo(name = "dni")
+    val dni: String,
+    @ColumnInfo(name = "nombre")
+    val nombre: String,
+    @ColumnInfo(name = "apellidos"))
+```
+
+- Para referenciar a una clave primaria compuesta por más de un campo, tendríamos que indicarlo con la propiedad primaryKeys de la anotación @Entity. De igual manera lo haríamos en el caso de necesitar una clave ajena, pero en este caso con la propiedad foreignKeys.
+```kt
+// Expresaríamos que un pedido define una clave ajena dni en clientes.
+@Entity(tableName = "pedidos",
+    foreignKeys = arrayOf(
+        ForeignKey(
+            entity = ClienteEntity::class,
+            parentColumns = arrayOf("dni"),
+            // Nombre de la columna en la tabla pedidos
+            childColumns = arrayOf("dni_cliente"),
+            onDelete = CASCADE
+        )
+    )
+)
+data class PedidoEntity(...)
+
+```
+
+- Embeber campos con referencias a otras tablas:
+```kt
+data class Direccion(
+    val calle: String?,
+    val ciudad: String?,
+    val pais: String?,
+    @ColumnInfo(name = "codigo_postal") 
+    val codigoPostal: String?
+)
+
+@Entity(tableName = "clientes")
+data class ClienteEntity(
+    @PrimaryKey
+    @ColumnInfo(name = "dni")
+    val dni: String,
+    @ColumnInfo(name = "nombre")
+    val nombre: String,
+    @ColumnInfo(name = "apellidos")
+    val apellidos: String,
+    // Marcamos como embebe @Embedded el campo a descomponer en la tabla
+    @Embedded val direccion: Direccion?
+)
+```
+- Definiremos primero una clase denominada RoomConverters dentro del paquete .data.room con todos los métodos convertidores. Ojo, no importa el nombre del método, sino su signatura (parámetro de entrada y de salida). Por ejemplo para fecha podría ser:
+```kt
+// Estamos presuponiendo que nuestras fechas nunca son nulas.
+class RoomConverters {
+    @TypeConverter
+    fun fromTimestamp(value: Int): LocalDate {
+        return LocalDate.fromEpochDays(value)
+    }
+
+    @TypeConverter
+    fun dateToTimestamp(date: LocalDate): Int {
+        return date.toEpochDays()
+    }
+}
+```
+
+## Ejemplo completo
+-  Clase PedidoEntity dentro del paquete .data.room
+```kt
+@Entity(tableName = "pedidos",
+    foreignKeys = arrayOf(
+        ForeignKey(
+            entity = ClienteEntity::class,
+            parentColumns = arrayOf("dni"),
+            childColumns = arrayOf("dni_cliente"),
+            onDelete = CASCADE
+        )
+    )
+)
+data class PedidoEntity(
+    // El id será autogenerado insertando un 0.
+    @PrimaryKey(autoGenerate = true)
+    @ColumnInfo(name = "id")
+    val id: Int,
+
+    @ColumnInfo(name = "dni_cliente")
+    val dniCliente: Int,
+
+    // Indicamos que siempre debe tener una fecha.
+    // Esta en la DB se guardará como un Int.
+    @NonNull
+    @ColumnInfo(name = "fecha")
+    val fecha: LocalDate
+)
+```
+
+## Definiendo relaciones entre Objetos
+
+```kt
+data class ClienteConPedidos(
+    // Sabe recuperar el objeto embebido.
+    @Embedded val cliente: ClienteEntity,
+    @Relation(
+          parentColumn = "dni",
+          // Nombre de la columna en la parte del muchos
+          entityColumn = "dni_cliente"
+    )
+    val pedidos: List<PedidoEntity>
+)
+```
+
+## Crear los Objetos de Acceso a la Base de Datos
+- Creacion de DAO con metodos de conveniencia
+```kt
+@Dao
+interface ClienteDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(cliente : ClienteEntity)
+
+    @Delete
+    suspend fun delete(cliente : ClienteEntity)
+
+    @Update
+    suspend fun update(cliente : ClienteEntity)
+
+    // Si no pasamos la entidad y lo que tenemos 
+    // es la PK deberemos hacer una consulta con @Query
+    // pasando la PK como parámetro.
+    @Query("DELETE FROM clientes WHERE dni = :dni")
+    suspend fun deleteByDni(dni: String)
+}
+```
+- Creacion de DAO con metodos de búsqueda
+```kt
+@Dao
+interface ClienteDao {
+    // ... aquí van los métodos de conveniencia CRUD
+
+    @Query("SELECT * FROM clientes")
+    suspend fun get(): List<ClienteEntity>
+
+    @Query("SELECT * FROM clientes WHERE dni IN (:dni)")
+    suspend fun getFromDni(dni : String): ClienteEntity
+
+    @Query("SELECT COUNT(*) FROM clientes")
+    suspend fun count(): Int
+}
+```
+- Selección de un subconjunto de columnas
+- si solo necesitamos una informacion determinada, podemos crear un DTO
+```kt
+data class NombreApellidosDTO(
+    @ColumnInfo(name = "nombre")
+    val nombre: String,
+    @ColumnInfo(name = "apellidos")
+    val apellidos: String
+)
+
+
+// Y solamente se tendrá que indicar en el Dao que el método correspondiente devolverá los datos de este tipo:
+
+@Query("SELECT nombre, apellidos FROM clientes")
+suspend fun getNombreApellido(): List<NombreApellidosDTO>
+```
+
+## Crear la Base de Datos Room y consumirla
+- Para crear la base de datos a partir de las entidades definidas y las operaciones que se realizarán sobre estas a partir de los DAOs de nuestra app:
+```kt
+@Database(
+    entities = [ClienteEntity::class, PedidoEntity::class],
+    version = 1
+)
+@TypeConverters(RoomConverters::class)
+abstract class TiendaDB : RoomDatabase() {
+    abstract fun clienteDao() : ClienteDao
+    abstract fun pedidoDao() : PedidoDao
+
+    companion object {
+        fun getDatabase(
+            context: Context
+        ) = Room.databaseBuilder(
+            context,
+            TiendaDB::class.java, "tienda"
+        )
+        .allowMainThreadQueries()
+        .fallbackToDestructiveMigration()
+        .build()
+    }
+}
+
+```
+## Preparando la Base de Datos y los DAOs con Hilt
+
+- Para inyectar la BD definimos provideTiendaDatabase que llama al método estático TiendaDB.getDatabase(context) para instanciarla. Fíjate que el contexto de la aplicación se inyecta usando la anotación @ApplicationContext de Hilt.
+```kt
+@Provides
+@Singleton
+fun provideTiendaDatabase(
+    @ApplicationContext context: Context
+): TiendaDB = TiendaDB.getDatabase(context)
+```
+
+- Para inyectar los DAOs, definimos provideClienteDao y providePedidoDao que inyectan los DAOs de la BD. Fíjate que se inyecta la BD y se llama a los métodos abstractos que devuelven los DAOs.
+```kt
+@Provides
+@Singleton
+fun provideClienteDao(
+  tiendaDB: TiendaDB
+): ClienteDao = tiendaDB.clienteDao()
+@Provides
+@Singleton
+fun providePedidoDao(
+  tiendaDB: TiendaDB
+): PedidoDao = tiendaDB.pedidoDao()
+```
+## Inyectando los DAOs en los repositorios
+```kt
+class ClienteRepository @Inject constructor(
+    private val clienteDao: ClienteDao
+) {
+    ...
+}
+```
+
+## Cargando datos de prueba en la BD
+- En el MyApplication
+```kt
+@HiltAndroidApp
+class MyApplication : Application() {
+@Inject
+    lateinit var daoClientes: ClienteDao
+
+    override fun onCreate() {
+        super.onCreate()
+
+        runBlocking {
+            if (daoClientes.count() == 0) {
+                daoClientes.insert(
+                    ClienteEntity("12345678A", "Juan", "Pérez"))
+                daoClientes.insert(
+                    ClienteEntity("87654321B", "María", "García"))
+                    
+        }
+    }
+}
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
