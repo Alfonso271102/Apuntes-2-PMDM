@@ -2167,6 +2167,10 @@ class MyApplication : Application() {
 }
 ```
 
+I added gradle.properties file
+
+ksp.incremental=false
+
 
 
 
